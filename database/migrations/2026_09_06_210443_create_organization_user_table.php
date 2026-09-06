@@ -15,6 +15,7 @@ return new class extends Migration
             $table->timestampsTz();
             $table->primary(['organization_id', 'user_id']);
             $table->index('user_id');
+            $table->index(['organization_id', 'is_owner']);
         });
     }
 
