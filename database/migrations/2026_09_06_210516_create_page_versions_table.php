@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('page_versions')) {
+            return;
+        }
+
         Schema::create('page_versions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('page_id')->constrained()->cascadeOnDelete();
