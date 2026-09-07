@@ -14,7 +14,7 @@ export interface PageSection {
   styles: BuilderJsonObject
   responsive: BuilderJsonObject
   animation: BuilderJsonObject
-  visibility: boolean
+  is_visible: boolean
   created_at?: string
   updated_at?: string
 }
@@ -28,7 +28,7 @@ export interface BuilderSectionInput {
   styles?: BuilderJsonObject
   responsive?: BuilderJsonObject
   animation?: BuilderJsonObject
-  visibility?: boolean
+  is_visible?: boolean
 }
 
 export interface MediaAsset {
