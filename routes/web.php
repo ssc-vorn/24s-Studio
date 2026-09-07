@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\CMS\BuilderController;
 use App\Http\Controllers\Admin\CMS\MediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicPageController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -26,6 +25,10 @@ Route::middleware('auth')->group(function () {
         ->whereUuid(['organization', 'page', 'version'])
         ->scopeBindings()
         ->name('admin.cms.builder.show');
+    Route::get('/admin/cms/organizations/{organization}/pages/{page}/builder/{version}/preview', [BuilderController::class, 'preview'])
+        ->whereUuid(['organization', 'page', 'version'])
+        ->scopeBindings()
+        ->name('admin.cms.builder.preview');
 
     Route::get('/admin/cms/organizations/{organization}/media', [MediaController::class, 'index'])
         ->whereUuid('organization')
