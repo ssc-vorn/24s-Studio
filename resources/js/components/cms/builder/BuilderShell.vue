@@ -29,7 +29,7 @@ const move = (id: string, targetId: string, asChild: boolean) => { builder.moveS
 const goBack = () => router.visit('/dashboard')
 const preview = () => window.open(`/admin/cms/organizations/${props.organization.id}/pages/${props.page.id}/builder/${props.version.id}/preview`, '_blank', 'noopener,noreferrer')
 const publish = async () => {
-  if (publishing.value || builder.dirty || props.version.status !== 'approved') return
+  if (publishing.value || props.version.status !== 'approved') return
   publishing.value = true
   try {
     await persist()
