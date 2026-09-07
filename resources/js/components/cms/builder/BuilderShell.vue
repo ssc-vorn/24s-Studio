@@ -14,10 +14,15 @@ const builder = useBuilderStore()
 const { scheduleSave } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
 onMounted(() => builder.hydrate(props.version.id, props.version.sections, props.version.revision))
 const selected = computed(() => builder.selectedSection)
-const addSection = (parentId: string | null) => { const id = crypto.randomUUID(); const input: BuilderSectionInput = { parent_id: parentId, type: 'hero', variant: 'default', content: { title: parentId ? 'Nested section' : 'Ideas That Inspire.', description: 'Designs That Deliver.' }, styles: {}, responsive: {}, animation: {}, visibility: true }; builder.addSection(input, id); scheduleSave() }
-const updateSelected = (patch: Partial<PageSection>) => { if (builder.selectedSectionId) builder.updateSection(builder.selectedSectionId, patch) }
-const toggle = (id: string) => { const section = builder.sections.find((item) => item.id === id); if (section) builder.updateSection(id, { visibility: !section.visibility }) }
-const remove = (id: string) => { if (window.confirm('Delete this section and its nested sections?')) builder.removeSection(id) }
+const addSection = (parentId: string | null) => {
+  const id = crypto.randomUUID()
+  const input: BuilderSectionInput = { parent_id: parentId, type: 'hero', variant: 'default', content: { title: parentId ? 'Nested section' : 'Ideas That Inspire.', description: 'Designs That Deliver.' }, styles: {}, responsive: {}, animation: {}, is_visible: true }
+  builder.addSection(input, id)
+  scheduleSave()
+}
+const updateSelected = (patch: Partial<PageSection>) => { if (builder.selectedSectionId) { builder.updateSection(builder.selectedSectionId, patch); scheduleSave() } }
+const toggle = (id: string) => { const section = builder.sections.find((item) => item.id === id); if (section) { builder.updateSection(id, { is_visible: !section.is_visible }); scheduleSave() } }
+const remove = (id: string) => { if (window.confirm('Delete this section and its nested sections?')) { builder.removeSection(id); scheduleSave() } }
 const move = (id: string, targetId: string, asChild: boolean) => { builder.moveSection(id, targetId, asChild); scheduleSave() }
 const goBack = () => router.visit('/dashboard')
 const preview = () => window.open(`/pages/${props.page.slug}`, '_blank', 'noopener,noreferrer')
