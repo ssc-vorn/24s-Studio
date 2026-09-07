@@ -10,7 +10,8 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'pages.view', 'pages.create', 'pages.update', 'pages.delete', 'pages.publish',
+            'members.manage',
+            'pages.view', 'pages.create', 'pages.update', 'pages.delete', 'pages.approve', 'pages.publish',
             'services.view', 'services.create', 'services.update', 'services.delete',
             'project_categories.view', 'project_categories.create', 'project_categories.update', 'project_categories.delete',
             'projects.view', 'projects.create', 'projects.update', 'projects.delete', 'projects.publish',

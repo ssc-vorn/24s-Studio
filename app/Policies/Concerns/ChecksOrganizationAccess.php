@@ -3,6 +3,7 @@
 namespace App\Policies\Concerns;
 
 use App\Models\User;
+use App\Support\Tenancy\OrganizationAccess;
 
 trait ChecksOrganizationAccess
 {
@@ -18,6 +19,6 @@ trait ChecksOrganizationAccess
 
     protected function allowed(User $user, string $organizationId, string $permission): bool
     {
-        return $this->member($user, $organizationId) && $this->permission($user, $permission);
+        return app(OrganizationAccess::class)->can($user, $organizationId, $permission);
     }
 }

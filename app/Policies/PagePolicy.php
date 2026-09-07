@@ -39,4 +39,9 @@ class PagePolicy
     {
         return $this->allowed($user, (string) $page->organization_id, 'pages.publish');
     }
+
+    public function approve(User $user, Page $page): bool
+    {
+        return $this->allowed($user, (string) $page->organization_id, 'pages.approve');
+    }
 }

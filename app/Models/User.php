@@ -23,7 +23,7 @@ class User extends Authenticatable
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class)
-            ->withPivot(['is_owner'])
+            ->withPivot(['is_owner', 'role'])
             ->withTimestamps();
     }
 
