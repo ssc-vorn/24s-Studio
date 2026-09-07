@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create('page_sections', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('page_version_id')->constrained()->cascadeOnDelete();
+            $table->uuid('page_version_id');
             $table->uuid('parent_id')->nullable();
             $table->string('type');
             $table->string('variant')->nullable();
@@ -30,6 +30,11 @@ return new class extends Migration
         });
 
         Schema::table('page_sections', function (Blueprint $table) {
+            $table->foreign('page_version_id', 'page_sections_page_version_id_foreign')
+                ->references('id')
+                ->on('page_versions')
+                ->cascadeOnDelete();
+
             $table->foreign('parent_id', 'page_sections_parent_id_foreign')
                 ->references('id')
                 ->on('page_sections')
