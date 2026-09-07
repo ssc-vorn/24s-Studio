@@ -3,18 +3,13 @@
 use App\Http\Controllers\Admin\CMS\BuilderController;
 use App\Http\Controllers\Admin\CMS\MediaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicPageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [PublicPageController::class, 'home'])->name('home');
+Route::get('/pages/{slug}', [PublicPageController::class, 'show'])->where('slug', '[A-Za-z0-9\-]+')->name('public.pages.show');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
