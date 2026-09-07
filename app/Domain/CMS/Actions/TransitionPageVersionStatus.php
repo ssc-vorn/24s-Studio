@@ -5,7 +5,6 @@ namespace App\Domain\CMS\Actions;
 use App\Models\Page;
 use App\Models\PageVersion;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class TransitionPageVersionStatus
 {
