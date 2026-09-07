@@ -29,7 +29,6 @@ jobs:
 
     env:
       APP_ENV: testing
-      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
@@ -59,8 +58,11 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Prepare test environment
+        run: cp .env.example .env
+
       - name: Generate test application key
-        run: php artisan key:generate --force
+        run: php artisan key:generate --force --no-interaction
 
       - name: Prepare application
         run: php artisan config:clear
