@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ImagePlus, Settings2, X } from 'lucide-vue-next'
+import { ImagePlus, Plus, Settings2, Trash2, X } from 'lucide-vue-next'
 import type { BuilderJsonObject, BuilderJsonValue, BuilderViewport, MediaAsset, PageSection } from '@/types/cms'
 import { getSectionDefinition, sectionRegistry } from './section-registry'
 import SectionField from './SectionField.vue'
@@ -13,8 +13,15 @@ const viewport = computed(() => props.viewport ?? 'desktop')
 const definition = computed(() => props.section ? getSectionDefinition(props.section.type) : null)
 const sectionTypes = computed(() => Object.values(sectionRegistry))
 const responsiveValues = computed(() => (props.section?.responsive?.[viewport.value] as BuilderJsonObject | undefined) ?? {})
+const cardItems = computed(() => {
+  const value = props.section?.content.items
+  return Array.isArray(value)
+    ? value.filter((item): item is BuilderJsonObject => typeof item === 'object' && item !== null && !Array.isArray(item))
+    : []
+})
 const mediaOpen = ref(false)
 const selectedMedia = ref<MediaAsset | null>(null)
+const cardMediaIndex = ref<number | null>(null)
 
 const updateContent = (key: string, value: BuilderJsonValue) => {
   if (!props.section) return
@@ -39,12 +46,20 @@ const setType = (type: string) => {
   emit('update', { type, variant: defaults.variant, content: structuredClone(defaults.content), styles: structuredClone(defaults.styles), responsive: structuredClone(defaults.responsive), animation: structuredClone(defaults.animation) })
 }
 const setVariant = (variant: string) => emit('update', { variant })
-const openMedia = () => { selectedMedia.value = null; mediaOpen.value = true }
+const openMedia = () => { selectedMedia.value = null; cardMediaIndex.value = null; mediaOpen.value = true }
+const openCardMedia = (index: number) => { selectedMedia.value = null; cardMediaIndex.value = index; mediaOpen.value = true }
 const chooseMedia = (media: MediaAsset) => {
   selectedMedia.value = media
   if (!props.section) return
-  emit('update', { content: { ...props.section.content, media_id: media.id, src: media.url ?? '', alt: props.section.content.alt || media.alt || '' } as BuilderJsonObject })
+  if (cardMediaIndex.value !== null) {
+    const items = cardItems.value.map((item) => ({ ...item }))
+    items[cardMediaIndex.value] = { ...items[cardMediaIndex.value], media_id: media.id, image: media.url ?? '', alt: items[cardMediaIndex.value].alt || media.alt || '' }
+    updateContent('items', items)
+  } else {
+    emit('update', { content: { ...props.section.content, media_id: media.id, src: media.url ?? '', alt: props.section.content.alt || media.alt || '' } as BuilderJsonObject })
+  }
   mediaOpen.value = false
+  cardMediaIndex.value = null
 }
 const removeMedia = () => {
   if (!props.section) return
@@ -54,6 +69,13 @@ const removeMedia = () => {
   delete content.alt
   emit('update', { content })
 }
+const addCard = () => updateContent('items', [...cardItems.value, { title: `Card ${cardItems.value.length + 1}`, description: '', href: '', image: '', alt: '' }])
+const updateCard = (index: number, key: string, value: BuilderJsonValue) => {
+  const items = cardItems.value.map((item) => ({ ...item }))
+  items[index] = { ...items[index], [key]: value }
+  updateContent('items', items)
+}
+const removeCard = (index: number) => updateContent('items', cardItems.value.filter((_, itemIndex) => itemIndex !== index))
 </script>
 
 <template>
@@ -77,8 +99,20 @@ const removeMedia = () => {
           </div>
         </template>
         <SectionField v-for="field in definition?.contentFields ?? []" :key="field.key" :label="field.label" :type="field.type" :model-value="section.content[field.key] ?? ''" @update:model-value="updateContent(field.key, $event)" />
+        <div v-if="section.type === 'cards'" class="space-y-3 rounded-lg border border-slate-200 p-3">
+          <div class="flex items-center justify-between"><div><div class="text-xs font-semibold text-slate-700">Cards</div><p class="mt-0.5 text-[10px] text-slate-400">Edit title, copy, link and media.</p></div><button type="button" class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50" @click="addCard"><Plus class="h-3.5 w-3.5" />Add</button></div>
+          <div v-if="cardItems.length" class="space-y-3">
+            <div v-for="(item, index) in cardItems" :key="index" class="space-y-2 rounded-md border border-slate-100 bg-slate-50 p-2.5">
+              <div class="flex items-center justify-between"><span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Card {{ index + 1 }}</span><button type="button" class="rounded p-1 text-slate-400 hover:bg-white hover:text-slate-700" title="Remove card" @click="removeCard(index)"><Trash2 class="h-3.5 w-3.5" /></button></div>
+              <SectionField label="Title" :model-value="item.title ?? ''" @update:model-value="updateCard(index, 'title', $event)" />
+              <SectionField label="Description" type="textarea" :model-value="item.description ?? ''" @update:model-value="updateCard(index, 'description', $event)" />
+              <SectionField label="Link" type="url" :model-value="item.href ?? ''" @update:model-value="updateCard(index, 'href', $event)" />
+              <div class="space-y-2"><div v-if="item.image" class="overflow-hidden rounded-md bg-white"><img :src="String(item.image)" :alt="String(item.alt ?? '')" class="aspect-[16/9] w-full object-cover" /></div><button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-50" @click="openCardMedia(index)"><ImagePlus class="h-3.5 w-3.5" />{{ item.image ? 'Replace image' : 'Choose image' }}</button></div>
+            </div>
+          </div>
+          <div v-else class="rounded-md border border-dashed border-slate-200 p-4 text-center text-[10px] text-slate-400">No cards yet. Add the first card.</div>
+        </div>
         <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Visible</span><input :checked="section.is_visible" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="emit('update', { is_visible: ($event.target as HTMLInputElement).checked })" /></label>
-        <div v-if="section.type === 'cards'" class="rounded-lg border border-dashed border-slate-200 p-3"><div class="text-xs font-semibold text-slate-600">Cards</div><p class="mt-1 text-xs leading-5 text-slate-400">Card item editing is the next content-schema expansion; the registry already reserves the items array.</p></div>
       </div>
       <div v-else-if="tab === 'style'" class="space-y-5 p-4">
         <SectionField label="Background" :model-value="section.styles.background ?? ''" @update:model-value="updateStyle('background', String($event ?? ''))" />
