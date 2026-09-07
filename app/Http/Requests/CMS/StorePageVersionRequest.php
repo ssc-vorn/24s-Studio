@@ -15,7 +15,6 @@ class StorePageVersionRequest extends FormRequest
     {
         return [
             'content' => ['required', 'array'],
-            'status' => ['sometimes', 'string', 'in:draft,review,approved'],
         ];
     }
 }
