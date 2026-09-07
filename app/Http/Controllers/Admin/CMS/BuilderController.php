@@ -14,12 +14,7 @@ class BuilderController extends Controller
 {
     public function show(Organization $organization, Page $page, PageVersion $version): Response
     {
-        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
-        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
-
-        app(OrganizationContext::class)->assertMember((string) $organization->getKey());
-        $this->authorize('view', $page);
-
+        $this->assertAccess($organization, $page, $version);
         $version->load('sections');
 
         return Inertia::render('Admin/CMS/Builder/Show', [
@@ -40,5 +35,36 @@ class BuilderController extends Controller
                 'sections' => $version->sections,
             ],
         ]);
+    }
+
+    public function preview(Organization $organization, Page $page, PageVersion $version): Response
+    {
+        $this->assertAccess($organization, $page, $version);
+        $version->load(['sections' => fn ($query) => $query->where('is_visible', true)->orderBy('position')]);
+
+        return Inertia::render('Public/CmsPage', [
+            'page' => [
+                'id' => (string) $page->getKey(),
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'template' => $page->template,
+                'metadata' => $page->metadata ?? [],
+            ],
+            'version' => [
+                'id' => (string) $version->getKey(),
+                'version' => (int) $version->version,
+                'published_at' => $version->published_at?->toISOString(),
+            ],
+            'sections' => $version->sections->values(),
+            'preview' => true,
+        ]);
+    }
+
+    private function assertAccess(Organization $organization, Page $page, PageVersion $version): void
+    {
+        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
+        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
+        app(OrganizationContext::class)->assertMember((string) $organization->getKey());
+        $this->authorize('view', $page);
     }
 }
