@@ -48,6 +48,7 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
       try {
         const serverSections = await pageSectionsApi.list(options.organizationId, options.pageId, versionId)
         const serverIds = new Set(serverSections.map((section) => section.id))
+        const persistedIds = new Map<string, string>()
 
         for (const section of snapshot) {
           if (serverIds.has(section.id)) {
@@ -58,13 +59,15 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
               section.id,
               editableFields(section),
             )
+            persistedIds.set(section.id, section.id)
           } else {
-            await pageSectionsApi.create(
+            const created = await pageSectionsApi.create(
               options.organizationId,
               options.pageId,
               versionId,
               editableFields(section),
             )
+            persistedIds.set(section.id, created.id)
           }
         }
 
@@ -79,7 +82,16 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
           }
         }
 
-        const orderedIds = snapshot
+        const savedSnapshot = snapshot.map((section) => ({
+          ...section,
+          id: persistedIds.get(section.id) ?? section.id,
+          page_version_id: versionId,
+          parent_id: section.parent_id
+            ? (persistedIds.get(section.parent_id) ?? section.parent_id)
+            : null,
+        }))
+
+        const orderedIds = savedSnapshot
           .filter((section) => section.parent_id === null)
           .sort((a, b) => a.position - b.position)
           .map((section) => section.id)
@@ -93,10 +105,11 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
           )
         }
 
-        if (structuredClone(sections.value).every((section, index) =>
-          JSON.stringify(section) === JSON.stringify(snapshot[index]),
-        )) {
-          builder.markSaved()
+        const current = structuredClone(sections.value)
+        const same = JSON.stringify(current) === JSON.stringify(snapshot)
+
+        if (same) {
+          builder.hydrate(versionId, savedSnapshot)
         } else {
           queued.value = true
         }
