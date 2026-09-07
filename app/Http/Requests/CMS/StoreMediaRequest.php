@@ -14,7 +14,14 @@ class StoreMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'max:51200', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,image/svg+xml,video/mp4,video/webm,application/pdf'],
+            // Keep uploads to non-executable media formats. SVG is intentionally
+            // excluded because user-controlled SVG can contain active content.
+            'file' => [
+                'required',
+                'file',
+                'max:51200',
+                'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,application/pdf',
+            ],
             'alt' => ['nullable', 'string', 'max:255'],
             'metadata' => ['nullable', 'array'],
         ];
