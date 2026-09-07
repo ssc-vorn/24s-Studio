@@ -20,7 +20,7 @@ class PageSectionResource extends JsonResource
             'styles' => $this->styles,
             'responsive' => $this->responsive,
             'animation' => $this->animation,
-            'visibility' => (bool) $this->visibility,
+            'is_visible' => (bool) $this->is_visible,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
