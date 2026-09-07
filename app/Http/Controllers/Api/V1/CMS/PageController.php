@@ -28,9 +28,7 @@ class PageController extends Controller
     {
         app(OrganizationContext::class)->assertMember((string) $organization->getKey());
         $this->authorize('viewAny', [Page::class, (string) $organization->getKey()]);
-
         $pages = $organization->pages()->latest()->paginate(min((int) $request->integer('per_page', 20), 100));
-
         return PageResource::collection($pages)->response();
     }
 
@@ -38,9 +36,7 @@ class PageController extends Controller
     {
         app(OrganizationContext::class)->assertMember((string) $organization->getKey());
         $this->authorize('create', [Page::class, (string) $organization->getKey()]);
-
         $page = $action->handle(PageData::fromArray($request->validated(), (string) $organization->getKey()), (int) $request->user()->getKey());
-
         return (new PageResource($page))->response()->setStatusCode(201);
     }
 
@@ -55,15 +51,9 @@ class PageController extends Controller
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         $this->authorize('update', $page);
-
         $current = $page->only(['title', 'slug', 'status', 'template', 'is_homepage', 'metadata']);
         $data = array_merge($current, $request->validated());
-
-        return new PageResource($action->handle(
-            $page,
-            PageData::fromArray($data, (string) $organization->getKey()),
-            (int) $request->user()->getKey(),
-        ));
+        return new PageResource($action->handle($page, PageData::fromArray($data, (string) $organization->getKey()), (int) $request->user()->getKey()));
     }
 
     public function destroy(Organization $organization, Page $page, DeletePage $action): JsonResponse
@@ -85,15 +75,7 @@ class PageController extends Controller
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         $this->authorize('update', $page);
-
-        $validated = $request->validated();
-        $version = $action->handle(
-            $page,
-            $validated['content'],
-            (int) $request->user()->getKey(),
-            $validated['status'] ?? 'draft',
-        );
-
+        $version = $action->handle($page, $request->validated()['content'], (int) $request->user()->getKey());
         return (new PageVersionResource($version))->response()->setStatusCode(201);
     }
 
@@ -102,7 +84,6 @@ class PageController extends Controller
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
         $this->authorize('update', $page);
-
         return new PageVersionResource($action->handle($page, $version, 'submit-review'));
     }
 
@@ -111,7 +92,6 @@ class PageController extends Controller
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
         $this->authorize('publish', $page);
-
         return new PageVersionResource($action->handle($page, $version, 'approve'));
     }
 
