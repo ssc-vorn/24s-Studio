@@ -30,7 +30,7 @@ const publish = () => scheduleSave()
     <div class="flex min-h-0 flex-1">
       <BuilderLayersPanel :sections="builder.sections" :selected-id="builder.selectedSectionId" @select="builder.select" @add="addSection" @remove="remove" @toggle="toggle" @move="move" />
       <BuilderCanvas :sections="builder.sections" :selected-id="builder.selectedSectionId" :viewport="builder.viewport" @select="builder.select" @add="addSection" />
-      <BuilderInspector :section="selected" :viewport="builder.viewport" @update="updateSelected" />
+      <BuilderInspector :section="selected" :viewport="builder.viewport" :organization-id="organization.id" @update="updateSelected" />
     </div>
   </div>
 </template>
