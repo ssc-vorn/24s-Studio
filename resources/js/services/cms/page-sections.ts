@@ -26,7 +26,7 @@ export const pageSectionsApi = {
     await axios.post(`${base(organizationId, pageId, versionId)}/reorder`, { section_ids: sectionIds })
   },
   async autosave(organizationId: string, pageId: string, versionId: string, revision: number, sections: PageSection[]) {
-    const response = await axios.put<AutosaveResponse>(`${base(organizationId, pageId, versionId)}/autosave`, { revision, sections })
+    const response = await axios.post<AutosaveResponse>(`${base(organizationId, pageId, versionId)}/autosave`, { revision, sections })
     return response.data
   },
 }
