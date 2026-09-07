@@ -8,34 +8,64 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->uuid('auth_user_id')->nullable()->unique();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password')->nullable();
-            $table->string('avatar_url')->nullable();
-            $table->string('status')->default('active')->index();
-            $table->timestamp('last_seen_at')->nullable();
-            $table->rememberToken();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('users')) {
+            Schema::create('users', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('auth_user_id')->nullable()->unique();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->timestamp('email_verified_at')->nullable();
+                $table->string('password')->nullable();
+                $table->string('avatar_url')->nullable();
+                $table->string('status')->default('active')->index();
+                $table->timestamp('last_seen_at')->nullable();
+                $table->rememberToken();
+                $table->timestamps();
+            });
+        } else {
+            // The Supabase foundation may already own the users table. Reconcile
+            // only the Laravel auth columns that are missing instead of replacing
+            // or dropping the existing table/data.
+            Schema::table('users', function (Blueprint $table) {
+                if (! Schema::hasColumn('users', 'auth_user_id')) {
+                    $table->uuid('auth_user_id')->nullable()->unique();
+                }
+                if (! Schema::hasColumn('users', 'email_verified_at')) {
+                    $table->timestamp('email_verified_at')->nullable();
+                }
+                if (! Schema::hasColumn('users', 'avatar_url')) {
+                    $table->string('avatar_url')->nullable();
+                }
+                if (! Schema::hasColumn('users', 'status')) {
+                    $table->string('status')->default('active')->index();
+                }
+                if (! Schema::hasColumn('users', 'last_seen_at')) {
+                    $table->timestamp('last_seen_at')->nullable();
+                }
+                if (! Schema::hasColumn('users', 'remember_token')) {
+                    $table->rememberToken();
+                }
+            });
+        }
 
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
+        if (! Schema::hasTable('password_reset_tokens')) {
+            Schema::create('password_reset_tokens', function (Blueprint $table) {
+                $table->string('email')->primary();
+                $table->string('token');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
 
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index()->constrained()->nullOnDelete();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
+        if (! Schema::hasTable('sessions')) {
+            Schema::create('sessions', function (Blueprint $table) {
+                $table->string('id')->primary();
+                $table->foreignId('user_id')->nullable()->index()->constrained()->nullOnDelete();
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->longText('payload');
+                $table->integer('last_activity')->index();
+            });
+        }
     }
 
     public function down(): void
