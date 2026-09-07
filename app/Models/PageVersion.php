@@ -12,9 +12,16 @@ class PageVersion extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['page_id', 'version', 'status', 'content', 'created_by', 'published_at'];
+    protected $fillable = ['page_id', 'version', 'status', 'revision', 'content', 'created_by', 'published_at'];
 
-    protected function casts(): array { return ['content' => 'array', 'published_at' => 'datetime']; }
+    protected function casts(): array
+    {
+        return [
+            'content' => 'array',
+            'revision' => 'integer',
+            'published_at' => 'datetime',
+        ];
+    }
 
     public function page(): BelongsTo { return $this->belongsTo(Page::class); }
     public function sections(): HasMany { return $this->hasMany(PageSection::class); }
