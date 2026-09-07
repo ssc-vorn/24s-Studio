@@ -2,8 +2,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useBuilderStore } from '@/stores/builder'
-import { pageSectionsApi } from '@/services/cms/page-sections'
-import type { BuilderSectionInput, PageSection } from '@/types/cms'
+import { autosavePageSections } from '@/services/cms/page-builder'
 
 export interface BuilderAutosaveOptions {
   organizationId: string
@@ -11,28 +10,17 @@ export interface BuilderAutosaveOptions {
   debounceMs?: number
 }
 
-const editableFields = (section: PageSection): BuilderSectionInput => ({
-  parent_id: section.parent_id,
-  type: section.type,
-  variant: section.variant,
-  position: section.position,
-  content: section.content,
-  styles: section.styles,
-  responsive: section.responsive,
-  animation: section.animation,
-  visibility: section.visibility,
-})
-
 export function useBuilderAutosave(options: BuilderAutosaveOptions) {
   const builder = useBuilderStore()
-  const { pageVersionId, sections, dirty } = storeToRefs(builder)
+  const { pageVersionId, sections, revision, dirty } = storeToRefs(builder)
   const saving = ref(false)
   const queued = ref(false)
   let savePromise: Promise<void> | null = null
+  let stopped = false
 
   const persist = async () => {
     const versionId = pageVersionId.value
-    if (!versionId || !dirty.value) return
+    if (stopped || !versionId || !dirty.value) return
 
     if (savePromise) {
       queued.value = true
@@ -40,87 +28,38 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
     }
 
     const snapshot = structuredClone(sections.value)
-    const snapshotIds = new Set(snapshot.map((section) => section.id))
-
+    const expectedRevision = revision.value
     builder.markSaving()
 
     savePromise = (async () => {
       try {
-        const serverSections = await pageSectionsApi.list(options.organizationId, options.pageId, versionId)
-        const serverIds = new Set(serverSections.map((section) => section.id))
-        const persistedIds = new Map<string, string>()
-
-        for (const section of snapshot) {
-          if (serverIds.has(section.id)) {
-            await pageSectionsApi.update(
-              options.organizationId,
-              options.pageId,
-              versionId,
-              section.id,
-              editableFields(section),
-            )
-            persistedIds.set(section.id, section.id)
-          } else {
-            const created = await pageSectionsApi.create(
-              options.organizationId,
-              options.pageId,
-              versionId,
-              editableFields(section),
-            )
-            persistedIds.set(section.id, created.id)
-          }
-        }
-
-        for (const serverSection of serverSections) {
-          if (!snapshotIds.has(serverSection.id)) {
-            await pageSectionsApi.remove(
-              options.organizationId,
-              options.pageId,
-              versionId,
-              serverSection.id,
-            )
-          }
-        }
-
-        const savedSnapshot = snapshot.map((section) => ({
-          ...section,
-          id: persistedIds.get(section.id) ?? section.id,
-          page_version_id: versionId,
-          parent_id: section.parent_id
-            ? (persistedIds.get(section.parent_id) ?? section.parent_id)
-            : null,
-        }))
-
-        const orderedIds = savedSnapshot
-          .filter((section) => section.parent_id === null)
-          .sort((a, b) => a.position - b.position)
-          .map((section) => section.id)
-
-        if (orderedIds.length > 0) {
-          await pageSectionsApi.reorder(
-            options.organizationId,
-            options.pageId,
-            versionId,
-            orderedIds,
-          )
-        }
+        const result = await autosavePageSections(
+          options.organizationId,
+          options.pageId,
+          versionId,
+          expectedRevision,
+          snapshot,
+        )
 
         const current = structuredClone(sections.value)
-        const same = JSON.stringify(current) === JSON.stringify(snapshot)
-
-        if (same) {
-          builder.hydrate(versionId, savedSnapshot)
+        if (JSON.stringify(current) === JSON.stringify(snapshot)) {
+          builder.markSaved(result.revision)
         } else {
+          builder.markSaved(result.revision)
           queued.value = true
         }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to autosave builder changes.'
-        builder.markSaveError(message)
+      } catch (error: any) {
+        const status = error?.response?.status
+        builder.markSaveError(
+          status === 409
+            ? 'Another editor changed this page. Reload the latest version before continuing.'
+            : 'Autosave failed. Your local changes are still available; retry when the connection is restored.',
+          status === 409,
+        )
       } finally {
         savePromise = null
         saving.value = false
-
-        if (queued.value) {
+        if (queued.value && !stopped) {
           queued.value = false
           scheduleSave()
         }
@@ -131,17 +70,11 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
     return savePromise
   }
 
-  const scheduleSave = useDebounceFn(() => {
-    void persist()
-  }, options.debounceMs ?? 1500)
+  const scheduleSave = useDebounceFn(() => { void persist() }, options.debounceMs ?? 1500)
 
-  watch(
-    sections,
-    () => {
-      if (dirty.value) scheduleSave()
-    },
-    { deep: true },
-  )
+  watch(sections, () => {
+    if (dirty.value) scheduleSave()
+  }, { deep: true })
 
   const flushBeforeLeave = (event: BeforeUnloadEvent) => {
     if (!dirty.value) return
@@ -151,14 +84,10 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
 
   onMounted(() => window.addEventListener('beforeunload', flushBeforeLeave))
   onBeforeUnmount(() => {
+    stopped = true
     window.removeEventListener('beforeunload', flushBeforeLeave)
     scheduleSave.cancel()
   })
 
-  return {
-    saving,
-    queued,
-    persist,
-    scheduleSave,
-  }
+  return { saving, queued, persist, scheduleSave }
 }
