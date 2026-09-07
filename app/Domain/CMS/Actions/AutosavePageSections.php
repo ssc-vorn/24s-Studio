@@ -28,13 +28,27 @@ final class AutosavePageSections
                 throw new ConflictHttpException('The builder snapshot does not match the current page version sections.');
             }
 
+            $parentMap = collect($sections)->mapWithKeys(fn (array $section) => [$section['id'] => $section['parent_id'] ?? null]);
+
             foreach ($sections as $section) {
-                if (($section['parent_id'] ?? null) === $section['id']) {
+                $parentId = $section['parent_id'] ?? null;
+
+                if ($parentId === $section['id']) {
                     throw new ConflictHttpException('A section cannot be its own parent.');
                 }
 
-                if (($section['parent_id'] ?? null) !== null && ! $ids->contains($section['parent_id'])) {
+                if ($parentId !== null && ! $ids->contains($parentId)) {
                     throw new ConflictHttpException('A section parent must belong to the same page version.');
+                }
+
+                $visited = [];
+                $cursor = $parentId;
+                while ($cursor !== null) {
+                    if (isset($visited[$cursor])) {
+                        throw new ConflictHttpException('A section hierarchy cannot contain a cycle.');
+                    }
+                    $visited[$cursor] = true;
+                    $cursor = $parentMap->get($cursor);
                 }
             }
 
@@ -50,7 +64,7 @@ final class AutosavePageSections
                         'styles' => $section['styles'] ?? [],
                         'responsive' => $section['responsive'] ?? [],
                         'animation' => $section['animation'] ?? [],
-                        'visibility' => (bool) $section['visibility'],
+                        'is_visible' => (bool) $section['is_visible'],
                     ]);
             }
 
