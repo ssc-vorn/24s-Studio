@@ -13,7 +13,7 @@ return new class extends Migration
         }
 
         Schema::create('page_sections', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->uuid('id');
             $table->uuid('page_version_id');
             $table->uuid('parent_id')->nullable();
             $table->string('type');
@@ -25,6 +25,9 @@ return new class extends Migration
             $table->jsonb('animation')->nullable();
             $table->boolean('is_visible')->default(true);
             $table->timestampsTz();
+
+            $table->primary('id');
+            $table->unique('id', 'page_sections_id_unique');
             $table->index(['page_version_id', 'parent_id', 'position']);
             $table->index(['page_version_id', 'type']);
         });
@@ -42,5 +45,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('page_sections'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('page_sections');
+    }
 };
