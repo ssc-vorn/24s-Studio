@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CMS\PageController;
+use App\Http\Controllers\Api\V1\CMS\PageSectionAutosaveController;
 use App\Http\Controllers\Api\V1\CMS\PageSectionController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,8 @@ Route::prefix('v1')
                 Route::prefix('pages/{page}/versions/{version}')
                     ->whereUuid(['page', 'version'])
                     ->group(function () {
+                        Route::post('sections/autosave', PageSectionAutosaveController::class)
+                            ->name('api.v1.page-sections.autosave');
                         Route::post('sections/reorder', [PageSectionController::class, 'reorder'])
                             ->name('api.v1.page-sections.reorder');
                         Route::apiResource('sections', PageSectionController::class)
