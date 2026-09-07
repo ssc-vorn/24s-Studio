@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [PublicPageController::class, 'home'])->name('home');
-Route::get('/pages/{slug}', [PublicPageController::class, 'show'])->where('slug', '[A-Za-z0-9\-]+')->name('public.pages.show');
+Route::get('/pages/{slug}', [PublicPageController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->name('public.pages.show');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
