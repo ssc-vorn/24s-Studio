@@ -52,7 +52,7 @@ export const useBuilderStore = defineStore('builder', () => {
     const siblings = next.filter((section) => section.parent_id === parentId)
     const position = input.position ?? siblings.length
     siblings.filter((section) => section.position >= position).forEach((section) => { section.position += 1 })
-    next.push({ id, page_version_id: pageVersionId.value ?? '', parent_id: parentId, type: input.type, variant: input.variant ?? null, position, content: clone(input.content ?? {}), styles: clone(input.styles ?? {}), responsive: clone(input.responsive ?? {}), animation: clone(input.animation ?? {}), visibility: input.visibility ?? true })
+    next.push({ id, page_version_id: pageVersionId.value ?? '', parent_id: parentId, type: input.type, variant: input.variant ?? null, position, content: clone(input.content ?? {}), styles: clone(input.styles ?? {}), responsive: clone(input.responsive ?? {}), animation: clone(input.animation ?? {}), is_visible: input.is_visible ?? true })
     commit(next)
     select(id)
   }
