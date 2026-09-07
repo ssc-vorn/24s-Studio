@@ -10,6 +10,7 @@ use App\Domain\CMS\Actions\UpdatePage;
 use App\Domain\CMS\DTOs\PageData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CMS\StorePageRequest;
+use App\Http\Requests\CMS\StorePageVersionRequest;
 use App\Http\Requests\CMS\UpdatePageRequest;
 use App\Http\Resources\PageResource;
 use App\Http\Resources\PageVersionResource;
@@ -25,7 +26,7 @@ class PageController extends Controller
     public function index(Request $request, Organization $organization): JsonResponse
     {
         app(OrganizationContext::class)->assertMember((string) $organization->getKey());
-        $this->authorize('view', $organization);
+        $this->authorize('viewAny', [Page::class, (string) $organization->getKey()]);
 
         $pages = $organization->pages()->latest()->paginate(min((int) $request->integer('per_page', 20), 100));
 
@@ -35,7 +36,7 @@ class PageController extends Controller
     public function store(StorePageRequest $request, Organization $organization, CreatePage $action): JsonResponse
     {
         app(OrganizationContext::class)->assertMember((string) $organization->getKey());
-        abort_unless($request->user()->can('pages.create'), 403);
+        $this->authorize('create', [Page::class, (string) $organization->getKey()]);
 
         $page = $action->handle(PageData::fromArray($request->validated(), (string) $organization->getKey()), (int) $request->user()->getKey());
 
@@ -54,9 +55,14 @@ class PageController extends Controller
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         $this->authorize('update', $page);
 
-        $current = $page->only(['title','slug','status','template','is_homepage','metadata']);
+        $current = $page->only(['title', 'slug', 'status', 'template', 'is_homepage', 'metadata']);
         $data = array_merge($current, $request->validated());
-        return new PageResource($action->handle($page, PageData::fromArray($data, (string) $organization->getKey()), (int) $request->user()->getKey()));
+
+        return new PageResource($action->handle(
+            $page,
+            PageData::fromArray($data, (string) $organization->getKey()),
+            (int) $request->user()->getKey(),
+        ));
     }
 
     public function destroy(Organization $organization, Page $page, DeletePage $action): JsonResponse
@@ -74,16 +80,23 @@ class PageController extends Controller
         return PageVersionResource::collection($page->versions()->latest('version')->paginate(20));
     }
 
-    public function createVersion(Request $request, Organization $organization, Page $page, CreatePageVersion $action): JsonResponse
+    public function createVersion(StorePageVersionRequest $request, Organization $organization, Page $page, CreatePageVersion $action): JsonResponse
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         $this->authorize('update', $page);
-        $validated = $request->validate(['content' => ['required','array'], 'status' => ['sometimes','string','in:draft,review,approved']]);
-        $version = $action->handle($page, $validated['content'], (int) $request->user()->getKey(), $validated['status'] ?? 'draft');
+
+        $validated = $request->validated();
+        $version = $action->handle(
+            $page,
+            $validated['content'],
+            (int) $request->user()->getKey(),
+            $validated['status'] ?? 'draft',
+        );
+
         return (new PageVersionResource($version))->response()->setStatusCode(201);
     }
 
-    public function publish(Request $request, Organization $organization, Page $page, PageVersion $version, PublishPage $action): PageResource
+    public function publish(Organization $organization, Page $page, PageVersion $version, PublishPage $action): PageResource
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
