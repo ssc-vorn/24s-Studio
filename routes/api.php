@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CMS\MediaController;
 use App\Http\Controllers\Api\V1\CMS\PageController;
 use App\Http\Controllers\Api\V1\CMS\PageSectionAutosaveController;
 use App\Http\Controllers\Api\V1\CMS\PageSectionController;
@@ -13,6 +14,9 @@ Route::prefix('v1')
             ->whereUuid('organization')
             ->group(function () {
                 Route::apiResource('pages', PageController::class)->whereUuid('page');
+                Route::apiResource('media', MediaController::class)
+                    ->only(['index', 'store', 'update', 'destroy'])
+                    ->whereUuid('media');
 
                 Route::get('pages/{page}/versions', [PageController::class, 'versions'])
                     ->whereUuid('page')->name('api.v1.pages.versions.index');
