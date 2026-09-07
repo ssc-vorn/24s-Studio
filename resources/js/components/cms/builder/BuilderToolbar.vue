@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Eye, Redo2, Save, Undo2, Upload } from 'lucide-vue-next'
+import { ArrowLeft, Eye, Redo2, Undo2, Upload } from 'lucide-vue-next'
 import BuilderViewportSwitcher from './BuilderViewportSwitcher.vue'
 import type { BuilderViewport } from '@/types/cms'
 
@@ -12,7 +12,8 @@ withDefaults(defineProps<{
   saveState: 'idle' | 'saving' | 'saved' | 'error' | 'conflict'
   dirty: boolean
   publishing?: boolean
-}>(), { dirty: false, publishing: false })
+  canPublish?: boolean
+}>(), { dirty: false, publishing: false, canPublish: false })
 
 const emit = defineEmits<{
   back: []
@@ -59,7 +60,7 @@ const statusLabel = (state: 'idle' | 'saving' | 'saved' | 'error' | 'conflict', 
       <button type="button" class="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 md:inline-flex" @click="emit('preview')">
         <Eye class="h-4 w-4" /> Preview
       </button>
-      <button type="button" :disabled="publishing || dirty" class="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" @click="emit('publish')">
+      <button type="button" :disabled="publishing || !canPublish" class="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" @click="emit('publish')">
         <Upload class="h-4 w-4" /> {{ publishing ? 'Publishing…' : 'Publish' }}
       </button>
     </div>
