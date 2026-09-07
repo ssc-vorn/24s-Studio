@@ -44,6 +44,10 @@ const toggle = (id: string) => {
 const remove = (id: string) => {
   if (window.confirm('Delete this section and its nested sections?')) builder.removeSection(id)
 }
+const move = (id: string, targetId: string, asChild: boolean) => {
+  builder.moveSection(id, targetId, asChild)
+  scheduleSave()
+}
 const goBack = () => router.visit('/dashboard')
 const preview = () => window.open(`/pages/${props.page.slug}`, '_blank', 'noopener,noreferrer')
 const publish = () => scheduleSave()
@@ -75,6 +79,7 @@ const publish = () => scheduleSave()
         @add="addSection"
         @remove="remove"
         @toggle="toggle"
+        @move="move"
       />
       <BuilderCanvas
         :sections="builder.sections"
