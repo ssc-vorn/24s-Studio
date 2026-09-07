@@ -16,3 +16,11 @@ export async function autosavePageSections(
   )
   return response.data.data
 }
+
+export async function publishPageVersion(
+  organizationId: string,
+  pageId: string,
+  versionId: string,
+): Promise<void> {
+  await axios.post(`/api/v1/organizations/${organizationId}/pages/${pageId}/versions/${versionId}/publish`)
+}
