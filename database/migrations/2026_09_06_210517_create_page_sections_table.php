@@ -23,7 +23,7 @@ return new class extends Migration
             $table->jsonb('styles')->nullable();
             $table->jsonb('responsive')->nullable();
             $table->jsonb('animation')->nullable();
-            $table->boolean('visibility')->default(true);
+            $table->boolean('is_visible')->default(true);
             $table->timestampsTz();
             $table->index(['page_version_id', 'parent_id', 'position']);
             $table->index(['page_version_id', 'type']);
