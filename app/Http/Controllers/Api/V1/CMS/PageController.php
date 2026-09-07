@@ -6,6 +6,7 @@ use App\Domain\CMS\Actions\CreatePage;
 use App\Domain\CMS\Actions\CreatePageVersion;
 use App\Domain\CMS\Actions\DeletePage;
 use App\Domain\CMS\Actions\PublishPage;
+use App\Domain\CMS\Actions\TransitionPageVersionStatus;
 use App\Domain\CMS\Actions\UpdatePage;
 use App\Domain\CMS\DTOs\PageData;
 use App\Http\Controllers\Controller;
@@ -94,6 +95,24 @@ class PageController extends Controller
         );
 
         return (new PageVersionResource($version))->response()->setStatusCode(201);
+    }
+
+    public function submitReview(Organization $organization, Page $page, PageVersion $version, TransitionPageVersionStatus $action): PageVersionResource
+    {
+        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
+        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
+        $this->authorize('update', $page);
+
+        return new PageVersionResource($action->handle($page, $version, 'submit-review'));
+    }
+
+    public function approve(Organization $organization, Page $page, PageVersion $version, TransitionPageVersionStatus $action): PageVersionResource
+    {
+        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
+        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
+        $this->authorize('publish', $page);
+
+        return new PageVersionResource($action->handle($page, $version, 'approve'));
     }
 
     public function publish(Organization $organization, Page $page, PageVersion $version, PublishPage $action): PageResource
