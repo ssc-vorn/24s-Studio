@@ -1,0 +1,89 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue'
+import { router } from '@inertiajs/vue3'
+import { useBuilderStore } from '@/stores/builder'
+import { useBuilderAutosave } from '@/composables/useBuilderAutosave'
+import type { BuilderSectionInput, BuilderViewport, PageSection } from '@/types/cms'
+import BuilderToolbar from './BuilderToolbar.vue'
+import BuilderLayersPanel from './BuilderLayersPanel.vue'
+import BuilderCanvas from './BuilderCanvas.vue'
+import BuilderInspector from './BuilderInspector.vue'
+
+const props = defineProps<{
+  organization: { id: string; name: string }
+  page: { id: string; title: string; slug: string }
+  version: { id: string; version: number; revision: number; status: string; sections: PageSection[] }
+}>()
+
+const builder = useBuilderStore()
+const { scheduleSave } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
+
+onMounted(() => builder.hydrate(props.version.id, props.version.sections, props.version.revision))
+
+const selected = computed(() => builder.selectedSection)
+const addSection = (parentId: string | null) => {
+  const id = crypto.randomUUID()
+  const input: BuilderSectionInput = {
+    parent_id: parentId,
+    type: 'hero',
+    variant: 'default',
+    content: { title: parentId ? 'Nested section' : 'Ideas That Inspire.', description: 'Designs That Deliver.' },
+    styles: {}, responsive: {}, animation: {}, visibility: true,
+  }
+  builder.addSection(input, id)
+  scheduleSave()
+}
+const updateSelected = (patch: Partial<PageSection>) => {
+  if (!builder.selectedSectionId) return
+  builder.updateSection(builder.selectedSectionId, patch)
+}
+const toggle = (id: string) => {
+  const section = builder.sections.find((item) => item.id === id)
+  if (section) builder.updateSection(id, { visibility: !section.visibility })
+}
+const remove = (id: string) => {
+  if (window.confirm('Delete this section and its nested sections?')) builder.removeSection(id)
+}
+const goBack = () => router.visit('/dashboard')
+const preview = () => window.open(`/pages/${props.page.slug}`, '_blank', 'noopener,noreferrer')
+const publish = () => scheduleSave()
+</script>
+
+<template>
+  <div class="flex h-screen min-h-[620px] flex-col overflow-hidden bg-slate-100 text-slate-900">
+    <BuilderToolbar
+      :title="page.title"
+      :version="version.version"
+      :viewport="builder.viewport"
+      :can-undo="builder.canUndo"
+      :can-redo="builder.canRedo"
+      :save-state="builder.saveState"
+      :dirty="builder.dirty"
+      @back="goBack"
+      @update:viewport="(value: BuilderViewport) => builder.setViewport(value)"
+      @undo="builder.undo"
+      @redo="builder.redo"
+      @preview="preview"
+      @publish="publish"
+    />
+
+    <div class="flex min-h-0 flex-1">
+      <BuilderLayersPanel
+        :sections="builder.sections"
+        :selected-id="builder.selectedSectionId"
+        @select="builder.select"
+        @add="addSection"
+        @remove="remove"
+        @toggle="toggle"
+      />
+      <BuilderCanvas
+        :sections="builder.sections"
+        :selected-id="builder.selectedSectionId"
+        :viewport="builder.viewport"
+        @select="builder.select"
+        @add="addSection"
+      />
+      <BuilderInspector :section="selected" @update="updateSelected" />
+    </div>
+  </div>
+</template>
