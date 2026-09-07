@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('page_sections', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('page_version_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('parent_id')->nullable()->constrained('page_sections')->cascadeOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->string('type');
             $table->string('variant')->nullable();
             $table->unsignedInteger('position')->default(0);
@@ -27,6 +27,13 @@ return new class extends Migration
             $table->timestampsTz();
             $table->index(['page_version_id', 'parent_id', 'position']);
             $table->index(['page_version_id', 'type']);
+        });
+
+        Schema::table('page_sections', function (Blueprint $table) {
+            $table->foreign('parent_id', 'page_sections_parent_id_foreign')
+                ->references('id')
+                ->on('page_sections')
+                ->cascadeOnDelete();
         });
     }
 
