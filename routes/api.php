@@ -22,6 +22,10 @@ Route::prefix('v1')
                     ->whereUuid('page')->name('api.v1.pages.versions.index');
                 Route::post('pages/{page}/versions', [PageController::class, 'createVersion'])
                     ->whereUuid('page')->name('api.v1.pages.versions.store');
+                Route::post('pages/{page}/versions/{version}/submit-review', [PageController::class, 'submitReview'])
+                    ->whereUuid(['page', 'version'])->name('api.v1.pages.versions.submit-review');
+                Route::post('pages/{page}/versions/{version}/approve', [PageController::class, 'approve'])
+                    ->whereUuid(['page', 'version'])->name('api.v1.pages.versions.approve');
                 Route::post('pages/{page}/versions/{version}/publish', [PageController::class, 'publish'])
                     ->whereUuid(['page', 'version'])->name('api.v1.pages.versions.publish');
 
