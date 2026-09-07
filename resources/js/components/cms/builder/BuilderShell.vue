@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import { useBuilderStore } from '@/stores/builder'
 import { useBuilderAutosave } from '@/composables/useBuilderAutosave'
 import type { BuilderSectionInput, BuilderViewport, PageSection } from '@/types/cms'
@@ -11,7 +12,8 @@ import BuilderInspector from './BuilderInspector.vue'
 
 const props = defineProps<{ organization: { id: string; name: string }; page: { id: string; title: string; slug: string }; version: { id: string; version: number; revision: number; status: string; sections: PageSection[] } }>()
 const builder = useBuilderStore()
-const { scheduleSave } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
+const publishing = ref(false)
+const { scheduleSave, saveNow } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
 onMounted(() => builder.hydrate(props.version.id, props.version.sections, props.version.revision))
 const selected = computed(() => builder.selectedSection)
 const addSection = (parentId: string | null) => {
@@ -25,13 +27,23 @@ const toggle = (id: string) => { const section = builder.sections.find((item) =>
 const remove = (id: string) => { if (window.confirm('Delete this section and its nested sections?')) { builder.removeSection(id); scheduleSave() } }
 const move = (id: string, targetId: string, asChild: boolean) => { builder.moveSection(id, targetId, asChild); scheduleSave() }
 const goBack = () => router.visit('/dashboard')
-const preview = () => window.open(`/pages/${props.page.slug}`, '_blank', 'noopener,noreferrer')
-const publish = () => scheduleSave()
+const preview = () => window.open(`/admin/cms/organizations/${props.organization.id}/pages/${props.page.id}/builder/${props.version.id}/preview`, '_blank', 'noopener,noreferrer')
+const publish = async () => {
+  if (publishing.value || builder.dirty || props.version.status !== 'approved') return
+  publishing.value = true
+  try {
+    await saveNow()
+    await axios.post(`/api/v1/organizations/${props.organization.id}/pages/${props.page.id}/versions/${props.version.id}/publish`)
+    router.reload({ only: ['version'] })
+  } finally {
+    publishing.value = false
+  }
+}
 </script>
 
 <template>
   <div class="flex h-screen min-h-[620px] flex-col overflow-hidden bg-slate-100 text-slate-900">
-    <BuilderToolbar :title="page.title" :version="version.version" :viewport="builder.viewport" :can-undo="builder.canUndo" :can-redo="builder.canRedo" :save-state="builder.saveState" :dirty="builder.dirty" @back="goBack" @update:viewport="(value: BuilderViewport) => builder.setViewport(value)" @undo="builder.undo" @redo="builder.redo" @preview="preview" @publish="publish" />
+    <BuilderToolbar :title="page.title" :version="version.version" :viewport="builder.viewport" :can-undo="builder.canUndo" :can-redo="builder.canRedo" :save-state="builder.saveState" :dirty="builder.dirty" :publishing="publishing" @back="goBack" @update:viewport="(value: BuilderViewport) => builder.setViewport(value)" @undo="builder.undo" @redo="builder.redo" @preview="preview" @publish="publish" />
     <div class="flex min-h-0 flex-1">
       <BuilderLayersPanel :sections="builder.sections" :selected-id="builder.selectedSectionId" @select="builder.select" @add="addSection" @remove="remove" @toggle="toggle" @move="move" />
       <BuilderCanvas :sections="builder.sections" :selected-id="builder.selectedSectionId" :viewport="builder.viewport" @select="builder.select" @add="addSection" />
