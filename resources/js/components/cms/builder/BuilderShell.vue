@@ -13,7 +13,7 @@ import BuilderInspector from './BuilderInspector.vue'
 const props = defineProps<{ organization: { id: string; name: string }; page: { id: string; title: string; slug: string }; version: { id: string; version: number; revision: number; status: string; sections: PageSection[] } }>()
 const builder = useBuilderStore()
 const publishing = ref(false)
-const { scheduleSave, saveNow } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
+const { scheduleSave, persist } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
 onMounted(() => builder.hydrate(props.version.id, props.version.sections, props.version.revision))
 const selected = computed(() => builder.selectedSection)
 const addSection = (parentId: string | null) => {
@@ -32,9 +32,9 @@ const publish = async () => {
   if (publishing.value || builder.dirty || props.version.status !== 'approved') return
   publishing.value = true
   try {
-    await saveNow()
+    await persist()
     await axios.post(`/api/v1/organizations/${props.organization.id}/pages/${props.page.id}/versions/${props.version.id}/publish`)
-    router.reload({ only: ['version'] })
+    window.location.reload()
   } finally {
     publishing.value = false
   }
