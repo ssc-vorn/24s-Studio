@@ -31,6 +31,33 @@ export interface BuilderSectionInput {
   visibility?: boolean
 }
 
+export interface MediaAsset {
+  id: string
+  organization_id: string
+  path: string
+  filename: string
+  mime_type: string
+  size: number
+  width: number | null
+  height: number | null
+  alt: string | null
+  metadata: BuilderJsonObject
+  url: string | null
+  created_by: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MediaListResponse {
+  data: MediaAsset[]
+  meta?: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+}
+
 export interface BuilderSaveState {
   status: 'idle' | 'saving' | 'saved' | 'error'
   error: string | null
