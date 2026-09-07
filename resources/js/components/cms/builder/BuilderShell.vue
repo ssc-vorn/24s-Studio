@@ -34,6 +34,7 @@ const publish = async () => {
   publishing.value = true
   try {
     await persist()
+    if (builder.dirty || builder.saveState === 'saving') return
     await axios.post(`/api/v1/organizations/${props.organization.id}/pages/${props.page.id}/versions/${props.version.id}/publish`)
     window.location.reload()
   } finally {
