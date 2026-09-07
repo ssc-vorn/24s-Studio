@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class MediaController extends Controller
 {
@@ -43,33 +44,45 @@ class MediaController extends Controller
         $this->authorize('create', [Media::class, (string) $organization->getKey()]);
 
         $file = $request->file('file');
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
-        $filename = Str::of($file->getClientOriginalName())->basename()->replaceMatches('/[^A-Za-z0-9._-]+/', '-')->trim('-')->value() ?: ('asset.' . $extension);
+        $mimeType = (string) $file->getMimeType();
+        $extension = $this->extensionForMime($mimeType);
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $baseName = Str::of($baseName)
+            ->replaceMatches('/[^A-Za-z0-9._-]+/', '-')
+            ->trim('-._')
+            ->limit(120, '')
+            ->value() ?: 'asset';
+        $filename = $baseName . '.' . $extension;
         $path = 'organizations/' . $organization->getKey() . '/media/' . (string) Str::uuid() . '/' . $filename;
         $disk = config('filesystems.media_disk', config('filesystems.default'));
 
-        Storage::disk($disk)->putFileAs(dirname($path), $file, basename($path), [
-            'visibility' => 'public',
-            'ContentType' => $file->getMimeType(),
-        ]);
+        try {
+            Storage::disk($disk)->putFileAs(dirname($path), $file, basename($path), [
+                'visibility' => 'public',
+                'ContentType' => $mimeType,
+            ]);
 
-        $dimensions = null;
-        if (str_starts_with((string) $file->getMimeType(), 'image/') && @getimagesize($file->getRealPath())) {
-            $dimensions = @getimagesize($file->getRealPath());
+            $dimensions = null;
+            if (str_starts_with($mimeType, 'image/') && @getimagesize($file->getRealPath())) {
+                $dimensions = @getimagesize($file->getRealPath());
+            }
+
+            $media = Media::query()->create([
+                'organization_id' => $organization->getKey(),
+                'path' => $path,
+                'filename' => $filename,
+                'mime_type' => $mimeType,
+                'size' => $file->getSize(),
+                'width' => $dimensions[0] ?? null,
+                'height' => $dimensions[1] ?? null,
+                'alt' => $request->validated('alt'),
+                'metadata' => $request->validated('metadata', []),
+                'created_by' => $request->user()?->getKey(),
+            ]);
+        } catch (Throwable $exception) {
+            Storage::disk($disk)->delete($path);
+            throw $exception;
         }
-
-        $media = Media::query()->create([
-            'organization_id' => $organization->getKey(),
-            'path' => $path,
-            'filename' => $filename,
-            'mime_type' => $file->getMimeType(),
-            'size' => $file->getSize(),
-            'width' => $dimensions[0] ?? null,
-            'height' => $dimensions[1] ?? null,
-            'alt' => $request->validated('alt'),
-            'metadata' => $request->validated('metadata', []),
-            'created_by' => $request->user()?->getKey(),
-        ]);
 
         return new MediaResource($this->withUrl($media));
     }
@@ -105,5 +118,19 @@ class MediaController extends Controller
         $disk = config('filesystems.media_disk', config('filesystems.default'));
         $media->setAttribute('url', Storage::disk($disk)->url($media->path));
         return $media;
+    }
+
+    private function extensionForMime(string $mimeType): string
+    {
+        return match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            'video/mp4' => 'mp4',
+            'video/webm' => 'webm',
+            'application/pdf' => 'pdf',
+            default => throw new \InvalidArgumentException('Unsupported media MIME type.'),
+        };
     }
 }
