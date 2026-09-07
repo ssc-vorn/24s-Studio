@@ -45,7 +45,7 @@ export function useBuilderAutosave(options: BuilderAutosaveOptions) {
         if (JSON.stringify(current) === JSON.stringify(snapshot)) {
           builder.markSaved(result.revision)
         } else {
-          builder.markSaved(result.revision)
+          builder.setRevision(result.revision)
           queued.value = true
         }
       } catch (error: any) {
