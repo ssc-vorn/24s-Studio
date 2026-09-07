@@ -65,11 +65,9 @@ const removeMedia = () => {
         <div><div class="text-xs uppercase tracking-wider text-slate-400">Variant</div><select :value="section.variant ?? definition?.variants[0]?.value" class="mt-1.5 w-full rounded-md border-slate-200 text-sm" @change="setVariant(($event.target as HTMLSelectElement).value)"><option v-for="item in definition?.variants ?? []" :key="item.value" :value="item.value">{{ item.label }}</option></select></div>
         <p class="text-xs leading-5 text-slate-400">{{ definition?.description || 'Custom section' }}</p>
       </div>
-
       <div class="grid grid-cols-4 border-b border-slate-100 px-2">
         <button v-for="item in [{ key: 'content', label: 'Content' }, { key: 'style', label: 'Style' }, { key: 'responsive', label: 'Responsive' }, { key: 'animation', label: 'Motion' }]" :key="item.key" type="button" :class="['border-b-2 px-1 py-3 text-[10px] font-semibold', tab === item.key ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400']" @click="tab = item.key as typeof tab">{{ item.label }}</button>
       </div>
-
       <div v-if="tab === 'content'" class="space-y-5 p-4">
         <template v-if="section.type === 'image'">
           <div class="space-y-3 rounded-lg border border-slate-200 p-3">
@@ -79,10 +77,9 @@ const removeMedia = () => {
           </div>
         </template>
         <SectionField v-for="field in definition?.contentFields ?? []" :key="field.key" :label="field.label" :type="field.type" :model-value="section.content[field.key] ?? ''" @update:model-value="updateContent(field.key, $event)" />
-        <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Visible</span><input :checked="section.visibility" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="emit('update', { visibility: ($event.target as HTMLInputElement).checked })" /></label>
+        <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Visible</span><input :checked="section.is_visible" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="emit('update', { is_visible: ($event.target as HTMLInputElement).checked })" /></label>
         <div v-if="section.type === 'cards'" class="rounded-lg border border-dashed border-slate-200 p-3"><div class="text-xs font-semibold text-slate-600">Cards</div><p class="mt-1 text-xs leading-5 text-slate-400">Card item editing is the next content-schema expansion; the registry already reserves the items array.</p></div>
       </div>
-
       <div v-else-if="tab === 'style'" class="space-y-5 p-4">
         <SectionField label="Background" :model-value="section.styles.background ?? ''" @update:model-value="updateStyle('background', String($event ?? ''))" />
         <SectionField label="Padding" :model-value="section.styles.padding ?? ''" @update:model-value="updateStyle('padding', String($event ?? ''))" />
@@ -90,7 +87,6 @@ const removeMedia = () => {
         <SectionField label="Border radius" :model-value="section.styles.radius ?? ''" @update:model-value="updateStyle('radius', String($event ?? ''))" />
         <SectionField label="Text align" :model-value="section.styles.textAlign ?? ''" @update:model-value="updateStyle('textAlign', String($event ?? ''))" />
       </div>
-
       <div v-else-if="tab === 'responsive'" class="space-y-5 p-4">
         <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Editing <strong class="text-slate-800">{{ viewport }}</strong> overrides.</div>
         <SectionField label="Padding" :model-value="responsiveValues.padding ?? ''" @update:model-value="updateResponsive('padding', $event)" />
@@ -98,7 +94,6 @@ const removeMedia = () => {
         <SectionField label="Text align" :model-value="responsiveValues.textAlign ?? ''" @update:model-value="updateResponsive('textAlign', $event)" />
         <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Visible</span><input :checked="responsiveValues.visible !== false" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="updateResponsive('visible', ($event.target as HTMLInputElement).checked)" /></label>
       </div>
-
       <div v-else class="space-y-5 p-4">
         <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Enabled</span><input :checked="section.animation.enabled !== false" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="updateAnimation('enabled', ($event.target as HTMLInputElement).checked)" /></label>
         <label class="block"><span class="text-xs font-medium text-slate-600">Preset</span><select :value="String(section.animation.preset ?? 'fade-up')" class="mt-1.5 w-full rounded-md border-slate-200 text-sm" @change="updateAnimation('preset', ($event.target as HTMLSelectElement).value)"><option value="none">None</option><option value="fade-up">Fade up</option><option value="fade-in">Fade in</option><option value="slide-left">Slide left</option><option value="slide-right">Slide right</option></select></label>
