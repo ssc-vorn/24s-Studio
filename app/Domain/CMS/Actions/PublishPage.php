@@ -12,9 +12,11 @@ final class PublishPage
     {
         return DB::transaction(function () use ($page, $version): Page {
             abort_unless((string) $version->page_id === (string) $page->getKey(), 422, 'The version does not belong to this page.');
+            abort_unless(in_array($version->status, ['approved', 'published'], true), 422, 'Only an approved version can be published.');
 
-            $page->versions()->where('status', 'published')->update(['status' => 'approved']);
-            $version->update(['status' => 'published', 'published_at' => now()]);
+            $lockedVersion = PageVersion::query()->whereKey($version->getKey())->lockForUpdate()->firstOrFail();
+            $page->versions()->where('status', 'published')->whereKeyNot($lockedVersion->getKey())->update(['status' => 'approved']);
+            $lockedVersion->update(['status' => 'published', 'published_at' => now()]);
             $page->update(['status' => 'published']);
 
             return $page->refresh();
