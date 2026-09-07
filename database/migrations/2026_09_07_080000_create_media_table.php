@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Supabase may already provision this table before Laravel's migration
+        // history knows about it. Never attempt to recreate an existing table.
+        if (Schema::hasTable('media')) {
+            return;
+        }
+
         Schema::create('media', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('organization_id');
