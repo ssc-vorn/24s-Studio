@@ -12,9 +12,9 @@ class PageSection extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['page_version_id', 'parent_id', 'type', 'variant', 'position', 'content', 'styles', 'responsive', 'animation', 'visibility'];
+    protected $fillable = ['page_version_id', 'parent_id', 'type', 'variant', 'position', 'content', 'styles', 'responsive', 'animation', 'is_visible'];
 
-    protected function casts(): array { return ['content' => 'array', 'styles' => 'array', 'responsive' => 'array', 'animation' => 'array', 'visibility' => 'boolean']; }
+    protected function casts(): array { return ['content' => 'array', 'styles' => 'array', 'responsive' => 'array', 'animation' => 'array', 'is_visible' => 'boolean']; }
 
     public function pageVersion(): BelongsTo { return $this->belongsTo(PageVersion::class); }
     public function parent(): BelongsTo { return $this->belongsTo(self::class, 'parent_id'); }
