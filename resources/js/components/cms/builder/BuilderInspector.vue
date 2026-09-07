@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Settings2 } from 'lucide-vue-next'
-import type { BuilderJsonObject, BuilderJsonValue, BuilderViewport, PageSection } from '@/types/cms'
+import { ImagePlus, Settings2, X } from 'lucide-vue-next'
+import type { BuilderJsonObject, BuilderJsonValue, BuilderViewport, MediaAsset, PageSection } from '@/types/cms'
 import { getSectionDefinition, sectionRegistry } from './section-registry'
 import SectionField from './SectionField.vue'
+import MediaPicker from './MediaPicker.vue'
 
-const props = defineProps<{ section: PageSection | null; viewport?: BuilderViewport }>()
+const props = defineProps<{ section: PageSection | null; viewport?: BuilderViewport; organizationId: string }>()
 const emit = defineEmits<{ update: [patch: Partial<PageSection>] }>()
 const tab = ref<'content' | 'style' | 'responsive' | 'animation'>('content')
 const viewport = computed(() => props.viewport ?? 'desktop')
 const definition = computed(() => props.section ? getSectionDefinition(props.section.type) : null)
 const sectionTypes = computed(() => Object.values(sectionRegistry))
 const responsiveValues = computed(() => (props.section?.responsive?.[viewport.value] as BuilderJsonObject | undefined) ?? {})
+const mediaOpen = ref(false)
+const selectedMedia = ref<MediaAsset | null>(null)
 
 const updateContent = (key: string, value: BuilderJsonValue) => {
   if (!props.section) return
@@ -36,6 +39,21 @@ const setType = (type: string) => {
   emit('update', { type, variant: defaults.variant, content: structuredClone(defaults.content), styles: structuredClone(defaults.styles), responsive: structuredClone(defaults.responsive), animation: structuredClone(defaults.animation) })
 }
 const setVariant = (variant: string) => emit('update', { variant })
+const openMedia = () => { selectedMedia.value = null; mediaOpen.value = true }
+const chooseMedia = (media: MediaAsset) => {
+  selectedMedia.value = media
+  if (!props.section) return
+  emit('update', { content: { ...props.section.content, media_id: media.id, src: media.url ?? '', alt: props.section.content.alt || media.alt || '' } as BuilderJsonObject })
+  mediaOpen.value = false
+}
+const removeMedia = () => {
+  if (!props.section) return
+  const content = { ...props.section.content }
+  delete content.media_id
+  delete content.src
+  delete content.alt
+  emit('update', { content })
+}
 </script>
 
 <template>
@@ -53,6 +71,13 @@ const setVariant = (variant: string) => emit('update', { variant })
       </div>
 
       <div v-if="tab === 'content'" class="space-y-5 p-4">
+        <template v-if="section.type === 'image'">
+          <div class="space-y-3 rounded-lg border border-slate-200 p-3">
+            <div v-if="section.content.src" class="relative overflow-hidden rounded-md bg-slate-100"><img :src="String(section.content.src)" :alt="String(section.content.alt ?? '')" class="aspect-[4/3] w-full object-cover" /><button type="button" class="absolute right-2 top-2 rounded-md bg-white/90 p-1.5 text-slate-600 shadow-sm hover:bg-white" title="Remove image" @click="removeMedia"><X class="h-4 w-4" /></button></div>
+            <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50" @click="openMedia"><ImagePlus class="h-4 w-4" />{{ section.content.src ? 'Replace media' : 'Choose media' }}</button>
+            <p v-if="section.content.media_id" class="truncate text-[10px] text-slate-400">Media ID: {{ section.content.media_id }}</p>
+          </div>
+        </template>
         <SectionField v-for="field in definition?.contentFields ?? []" :key="field.key" :label="field.label" :type="field.type" :model-value="section.content[field.key] ?? ''" @update:model-value="updateContent(field.key, $event)" />
         <label class="flex items-center justify-between rounded-lg border border-slate-200 p-3"><span class="text-xs font-medium text-slate-600">Visible</span><input :checked="section.visibility" type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900" @change="emit('update', { visibility: ($event.target as HTMLInputElement).checked })" /></label>
         <div v-if="section.type === 'cards'" class="rounded-lg border border-dashed border-slate-200 p-3"><div class="text-xs font-semibold text-slate-600">Cards</div><p class="mt-1 text-xs leading-5 text-slate-400">Card item editing is the next content-schema expansion; the registry already reserves the items array.</p></div>
@@ -82,5 +107,6 @@ const setVariant = (variant: string) => emit('update', { variant })
       </div>
     </div>
     <div v-else class="flex flex-1 items-center justify-center p-8 text-center"><div><Settings2 class="mx-auto h-8 w-8 text-slate-300" /><p class="mt-3 text-sm font-medium text-slate-600">Select a section</p><p class="mt-1 text-xs text-slate-400">Its content and design controls will appear here.</p></div></div>
+    <MediaPicker :open="mediaOpen" :organization-id="organizationId" :selected-id="selectedMedia?.id ?? (section?.content.media_id as string | undefined)" @close="mediaOpen = false" @select="chooseMedia" />
   </aside>
 </template>
