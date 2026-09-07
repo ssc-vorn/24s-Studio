@@ -17,6 +17,31 @@ export async function autosavePageSections(
   return response.data.data
 }
 
+async function transitionPageVersion(
+  organizationId: string,
+  pageId: string,
+  versionId: string,
+  transition: 'submit-review' | 'approve',
+): Promise<void> {
+  await axios.post(`/api/v1/organizations/${organizationId}/pages/${pageId}/versions/${versionId}/${transition}`)
+}
+
+export async function submitPageVersionForReview(
+  organizationId: string,
+  pageId: string,
+  versionId: string,
+): Promise<void> {
+  await transitionPageVersion(organizationId, pageId, versionId, 'submit-review')
+}
+
+export async function approvePageVersion(
+  organizationId: string,
+  pageId: string,
+  versionId: string,
+): Promise<void> {
+  await transitionPageVersion(organizationId, pageId, versionId, 'approve')
+}
+
 export async function publishPageVersion(
   organizationId: string,
   pageId: string,
