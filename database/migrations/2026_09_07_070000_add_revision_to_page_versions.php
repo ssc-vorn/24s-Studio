@@ -17,18 +17,6 @@ return new class extends Migration
                 $table->unsignedBigInteger('revision')->default(1)->after('status');
             });
         }
-
-        // The Supabase foundation migration already owns this index in some
-        // environments. Add it only when the index is not already present.
-        $indexExists = Schema::getConnection()
-            ->getDoctrineSchemaManager()
-            ->listTableIndexes('page_versions');
-
-        if (! array_key_exists('page_versions_page_id_revision_index', $indexExists)) {
-            Schema::table('page_versions', function (Blueprint $table) {
-                $table->index(['page_id', 'revision']);
-            });
-        }
     }
 
     public function down(): void
