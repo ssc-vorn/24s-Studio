@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CMS\BuilderController;
+use App\Http\Controllers\Admin\CMS\MediaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,10 @@ Route::middleware('auth')->group(function () {
         ->whereUuid(['organization', 'page', 'version'])
         ->scopeBindings()
         ->name('admin.cms.builder.show');
+
+    Route::get('/admin/cms/organizations/{organization}/media', [MediaController::class, 'index'])
+        ->whereUuid('organization')
+        ->name('admin.cms.media.index');
 });
 
 require __DIR__.'/auth.php';
