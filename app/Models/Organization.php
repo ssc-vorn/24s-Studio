@@ -25,7 +25,7 @@ class Organization extends Model
     /** @return BelongsToMany<User> */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withPivot(['is_owner'])->withTimestamps();
+        return $this->belongsToMany(User::class)->withPivot(['is_owner', 'role'])->withTimestamps();
     }
 
     /** @return HasMany<Page> */

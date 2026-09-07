@@ -91,7 +91,7 @@ class PageController extends Controller
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
-        $this->authorize('publish', $page);
+        $this->authorize('approve', $page);
         return new PageVersionResource($action->handle($page, $version, 'approve'));
     }
 

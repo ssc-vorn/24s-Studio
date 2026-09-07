@@ -4,15 +4,15 @@ namespace App\Http\Controllers\Admin\CMS;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
-use Illuminate\Http\Request;
+use App\Models\Media;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MediaController extends Controller
 {
-    public function index(Request $request, Organization $organization): Response
+    public function index(Organization $organization): Response
     {
-        abort_unless($request->user()?->organizations()->whereKey($organization->getKey())->exists(), 403);
+        $this->authorize('viewAny', [Media::class, (string) $organization->getKey()]);
 
         return Inertia::render('Admin/CMS/Media/Index', [
             'organization' => [

@@ -138,11 +138,15 @@ export const useBuilderStore = defineStore('builder', () => {
     dirty.value = true
     saveState.value = 'idle'
   }
+  function restoreLocalDraft(incoming: PageSection[]) {
+    commit(incoming)
+    select(null)
+  }
   function markSaving() { saveState.value = 'saving'; saveError.value = null }
   function markSaved(nextRevision: number) { revision.value = nextRevision; dirty.value = false; saveState.value = 'saved'; saveError.value = null; lastSavedAt.value = new Date().toISOString() }
   function markSaveError(message: string, conflict = false) { saveState.value = conflict ? 'conflict' : 'error'; saveError.value = message }
   function setRevision(nextRevision: number) { revision.value = nextRevision }
   function markConflict(message: string) { markSaveError(message, true) }
 
-  return { pageVersionId, revision, sections, selectedSectionId, selectedSection, rootSections, viewport, dirty, saveState, saveError, lastSavedAt, canUndo, canRedo, hydrate, select, setViewport, addSection, updateSection, removeSection, reorder, moveSection, undo, redo, markSaving, markSaved, markSaveError, setRevision, markConflict }
+  return { pageVersionId, revision, sections, selectedSectionId, selectedSection, rootSections, viewport, dirty, saveState, saveError, lastSavedAt, canUndo, canRedo, hydrate, select, setViewport, addSection, updateSection, removeSection, reorder, moveSection, undo, redo, restoreLocalDraft, markSaving, markSaved, markSaveError, setRevision, markConflict }
 })

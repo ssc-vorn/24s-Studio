@@ -29,11 +29,6 @@ final class OrganizationContext
 
     public function can(string $organizationId, string $permission): bool
     {
-        $user = $this->user();
-        if (!$user->organizations()->whereKey($organizationId)->exists()) {
-            return false;
-        }
-
-        return $user->can($permission);
+        return app(OrganizationAccess::class)->can($this->user(), $organizationId, $permission);
     }
 }
