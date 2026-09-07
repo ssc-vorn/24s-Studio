@@ -16,6 +16,7 @@ const publishing = ref(false)
 const { scheduleSave, persist } = useBuilderAutosave({ organizationId: props.organization.id, pageId: props.page.id })
 onMounted(() => builder.hydrate(props.version.id, props.version.sections, props.version.revision))
 const selected = computed(() => builder.selectedSection)
+const canPublish = computed(() => props.version.status === 'approved')
 const addSection = (parentId: string | null) => {
   const id = crypto.randomUUID()
   const input: BuilderSectionInput = { parent_id: parentId, type: 'hero', variant: 'default', content: { title: parentId ? 'Nested section' : 'Ideas That Inspire.', description: 'Designs That Deliver.' }, styles: {}, responsive: {}, animation: {}, is_visible: true }
@@ -29,7 +30,7 @@ const move = (id: string, targetId: string, asChild: boolean) => { builder.moveS
 const goBack = () => router.visit('/dashboard')
 const preview = () => window.open(`/admin/cms/organizations/${props.organization.id}/pages/${props.page.id}/builder/${props.version.id}/preview`, '_blank', 'noopener,noreferrer')
 const publish = async () => {
-  if (publishing.value || props.version.status !== 'approved') return
+  if (publishing.value || !canPublish.value) return
   publishing.value = true
   try {
     await persist()
@@ -43,7 +44,7 @@ const publish = async () => {
 
 <template>
   <div class="flex h-screen min-h-[620px] flex-col overflow-hidden bg-slate-100 text-slate-900">
-    <BuilderToolbar :title="page.title" :version="version.version" :viewport="builder.viewport" :can-undo="builder.canUndo" :can-redo="builder.canRedo" :save-state="builder.saveState" :dirty="builder.dirty" :publishing="publishing" @back="goBack" @update:viewport="(value: BuilderViewport) => builder.setViewport(value)" @undo="builder.undo" @redo="builder.redo" @preview="preview" @publish="publish" />
+    <BuilderToolbar :title="page.title" :version="version.version" :viewport="builder.viewport" :can-undo="builder.canUndo" :can-redo="builder.canRedo" :save-state="builder.saveState" :dirty="builder.dirty" :publishing="publishing" :can-publish="canPublish" @back="goBack" @update:viewport="(value: BuilderViewport) => builder.setViewport(value)" @undo="builder.undo" @redo="builder.redo" @preview="preview" @publish="publish" />
     <div class="flex min-h-0 flex-1">
       <BuilderLayersPanel :sections="builder.sections" :selected-id="builder.selectedSectionId" @select="builder.select" @add="addSection" @remove="remove" @toggle="toggle" @move="move" />
       <BuilderCanvas :sections="builder.sections" :selected-id="builder.selectedSectionId" :viewport="builder.viewport" @select="builder.select" @add="addSection" />
