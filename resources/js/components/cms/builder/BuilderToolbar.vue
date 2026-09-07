@@ -11,7 +11,8 @@ withDefaults(defineProps<{
   canRedo: boolean
   saveState: 'idle' | 'saving' | 'saved' | 'error' | 'conflict'
   dirty: boolean
-}>(), { dirty: false })
+  publishing?: boolean
+}>(), { dirty: false, publishing: false })
 
 const emit = defineEmits<{
   back: []
@@ -58,8 +59,8 @@ const statusLabel = (state: 'idle' | 'saving' | 'saved' | 'error' | 'conflict', 
       <button type="button" class="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 md:inline-flex" @click="emit('preview')">
         <Eye class="h-4 w-4" /> Preview
       </button>
-      <button type="button" class="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800" @click="emit('publish')">
-        <Upload class="h-4 w-4" /> Publish
+      <button type="button" :disabled="publishing || dirty" class="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" @click="emit('publish')">
+        <Upload class="h-4 w-4" /> {{ publishing ? 'Publishing…' : 'Publish' }}
       </button>
     </div>
   </header>
