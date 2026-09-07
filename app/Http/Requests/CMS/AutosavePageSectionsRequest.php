@@ -25,7 +25,7 @@ class AutosavePageSectionsRequest extends FormRequest
             'sections.*.styles' => ['nullable', 'array'],
             'sections.*.responsive' => ['nullable', 'array'],
             'sections.*.animation' => ['nullable', 'array'],
-            'sections.*.visibility' => ['required', 'boolean'],
+            'sections.*.is_visible' => ['required', 'boolean'],
         ];
     }
 }
