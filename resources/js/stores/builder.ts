@@ -80,6 +80,48 @@ export const useBuilderStore = defineStore('builder', () => {
     next.forEach((section) => { if (ordered.has(section.id)) { section.parent_id = parentId; section.position = ordered.get(section.id)! } })
     commit(next)
   }
+  function moveSection(id: string, targetId: string, asChild = false) {
+    if (id === targetId) return
+    const next = snapshot()
+    const dragged = next.find((section) => section.id === id)
+    const target = next.find((section) => section.id === targetId)
+    if (!dragged || !target) return
+
+    const descendantIds = new Set<string>([id])
+    let changed = true
+    while (changed) {
+      changed = false
+      next.forEach((section) => {
+        if (section.parent_id && descendantIds.has(section.parent_id) && !descendantIds.has(section.id)) {
+          descendantIds.add(section.id)
+          changed = true
+        }
+      })
+    }
+    if (asChild && descendantIds.has(targetId)) return
+
+    const oldParentId = dragged.parent_id
+    const newParentId = asChild ? target.id : target.parent_id
+    const remaining = next.filter((section) => section.id !== id)
+    const siblings = remaining
+      .filter((section) => section.parent_id === newParentId)
+      .sort((a, b) => a.position - b.position)
+
+    dragged.parent_id = newParentId
+    const targetIndex = asChild ? siblings.length : siblings.findIndex((section) => section.id === targetId) + 1
+    siblings.splice(Math.max(0, targetIndex), 0, dragged)
+
+    siblings.forEach((section, index) => { section.position = index })
+    if (oldParentId !== newParentId) {
+      remaining
+        .filter((section) => section.parent_id === oldParentId)
+        .sort((a, b) => a.position - b.position)
+        .forEach((section, index) => { section.position = index })
+    }
+
+    commit(remaining)
+    select(id)
+  }
   function undo() {
     const previous = history.value.pop()
     if (!previous) return
@@ -102,5 +144,5 @@ export const useBuilderStore = defineStore('builder', () => {
   function setRevision(nextRevision: number) { revision.value = nextRevision }
   function markConflict(message: string) { markSaveError(message, true) }
 
-  return { pageVersionId, revision, sections, selectedSectionId, selectedSection, rootSections, viewport, dirty, saveState, saveError, lastSavedAt, canUndo, canRedo, hydrate, select, setViewport, addSection, updateSection, removeSection, reorder, undo, redo, markSaving, markSaved, markSaveError, setRevision, markConflict }
+  return { pageVersionId, revision, sections, selectedSectionId, selectedSection, rootSections, viewport, dirty, saveState, saveError, lastSavedAt, canUndo, canRedo, hydrate, select, setViewport, addSection, updateSection, removeSection, reorder, moveSection, undo, redo, markSaving, markSaved, markSaveError, setRevision, markConflict }
 })
