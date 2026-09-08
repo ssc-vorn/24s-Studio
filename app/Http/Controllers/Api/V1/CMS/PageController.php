@@ -72,6 +72,14 @@ class PageController extends Controller
         return PageVersionResource::collection($page->versions()->with('creator')->latest('version')->paginate(20));
     }
 
+    public function version(Organization $organization, Page $page, PageVersion $version): PageVersionResource
+    {
+        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
+        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
+        $this->authorize('view', $page);
+        return new PageVersionResource($version->load(['creator', 'sections']));
+    }
+
     public function createVersion(StorePageVersionRequest $request, Organization $organization, Page $page, CreatePageVersion $action): JsonResponse
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
