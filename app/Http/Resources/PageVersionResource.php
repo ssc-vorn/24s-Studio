@@ -17,6 +17,11 @@ class PageVersionResource extends JsonResource
             'status' => $this->status,
             'content' => $this->content,
             'created_by' => $this->created_by,
+            'creator' => $this->whenLoaded('creator', fn () => [
+                'id' => $this->creator->getKey(),
+                'name' => $this->creator->name,
+            ]),
+            'sections' => $this->whenLoaded('sections', fn () => PageSectionResource::collection($this->sections)),
             'published_at' => $this->published_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
         ];
