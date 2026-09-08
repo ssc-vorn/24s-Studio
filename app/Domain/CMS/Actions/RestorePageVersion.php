@@ -2,6 +2,7 @@
 
 namespace App\Domain\CMS\Actions;
 
+use App\Domain\Audit\AuditLogger;
 use App\Models\Page;
 use App\Models\PageSection;
 use App\Models\PageVersion;
@@ -10,6 +11,10 @@ use Illuminate\Support\Str;
 
 final class RestorePageVersion
 {
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
+
     public function handle(Page $page, PageVersion $source, int $userId): PageVersion
     {
         return DB::transaction(function () use ($page, $source, $userId): PageVersion {
@@ -46,6 +51,14 @@ final class RestorePageVersion
                     'is_visible' => (bool) $section->is_visible,
                 ]);
             }
+
+            $this->auditLogger->log(
+                action: 'page.version.restored',
+                auditable: $version,
+                before: ['source_version_id' => $source->getKey(), 'source_version' => (int) $source->version],
+                after: ['version_id' => $version->getKey(), 'version' => (int) $version->version, 'status' => $version->status],
+                organizationId: (string) $page->organization_id,
+            );
 
             return $version->load('sections');
         });
