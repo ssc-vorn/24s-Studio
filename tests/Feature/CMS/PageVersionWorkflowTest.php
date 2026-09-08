@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\CMS;
 
+use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\Page;
 use App\Models\PageVersion;
@@ -26,6 +27,14 @@ class PageVersionWorkflowTest extends TestCase
             ->assertJsonPath('data.status', 'review');
 
         $this->assertSame('review', $version->refresh()->status);
+
+        $audit = AuditLog::query()->latest('id')->firstOrFail();
+        $this->assertSame('page.version.submitted_for_review', $audit->action);
+        $this->assertSame($organization->id, $audit->organization_id);
+        $this->assertSame($user->id, $audit->user_id);
+        $this->assertSame((string) $version->id, (string) $audit->auditable_id);
+        $this->assertSame(['status' => 'draft'], $audit->before_data);
+        $this->assertSame(['status' => 'review'], $audit->after_data);
     }
 
     public function test_member_with_publish_permission_can_approve_review_version(): void
@@ -39,9 +48,14 @@ class PageVersionWorkflowTest extends TestCase
             ->assertJsonPath('data.status', 'approved');
 
         $this->assertSame('approved', $version->refresh()->status);
+
+        $audit = AuditLog::query()->latest('id')->firstOrFail();
+        $this->assertSame('page.version.approved', $audit->action);
+        $this->assertSame(['status' => 'review'], $audit->before_data);
+        $this->assertSame(['status' => 'approved'], $audit->after_data);
     }
 
-    public function test_invalid_transition_is_rejected(): void
+    public function test_invalid_transition_is_rejected_without_audit_log(): void
     {
         [$user, $organization, $page, $version] = $this->fixture('draft');
         $this->grant($user, 'pages.publish');
@@ -51,6 +65,7 @@ class PageVersionWorkflowTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertSame('draft', $version->refresh()->status);
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 
     public function test_cross_organization_transition_is_not_found(): void
@@ -64,6 +79,7 @@ class PageVersionWorkflowTest extends TestCase
             ->assertNotFound();
 
         $this->assertSame('draft', $version->refresh()->status);
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 
     private function url(Organization $organization, Page $page, PageVersion $version, string $action): string
