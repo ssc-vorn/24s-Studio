@@ -62,6 +62,7 @@ class PublishingWorkflowTest extends TestCase
     {
         $organization = $this->organization('published-org');
         $page = $this->page($organization, 'Published page', 'published-page');
+        $page->update(['status' => 'published']);
         $version = $this->version($page, 'published');
         $version->update(['published_at' => now()]);
 
