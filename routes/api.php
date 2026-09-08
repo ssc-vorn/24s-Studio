@@ -22,6 +22,8 @@ Route::prefix('v1')
                     ->whereUuid('page')->name('api.v1.pages.versions.index');
                 Route::post('pages/{page}/versions', [PageController::class, 'createVersion'])
                     ->whereUuid('page')->name('api.v1.pages.versions.store');
+                Route::get('pages/{page}/versions/{version}', [PageController::class, 'version'])
+                    ->whereUuid(['page', 'version'])->name('api.v1.pages.versions.show');
                 Route::post('pages/{page}/versions/{version}/restore', [PageController::class, 'restoreVersion'])
                     ->whereUuid(['page', 'version'])->name('api.v1.pages.versions.restore');
                 Route::post('pages/{page}/versions/{version}/submit-review', [PageController::class, 'submitReview'])
