@@ -6,6 +6,7 @@ use App\Domain\CMS\Actions\CreatePage;
 use App\Domain\CMS\Actions\CreatePageVersion;
 use App\Domain\CMS\Actions\DeletePage;
 use App\Domain\CMS\Actions\PublishPage;
+use App\Domain\CMS\Actions\RestorePageVersion;
 use App\Domain\CMS\Actions\TransitionPageVersionStatus;
 use App\Domain\CMS\Actions\UpdatePage;
 use App\Domain\CMS\DTOs\PageData;
@@ -68,7 +69,7 @@ class PageController extends Controller
     {
         abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
         $this->authorize('view', $page);
-        return PageVersionResource::collection($page->versions()->latest('version')->paginate(20));
+        return PageVersionResource::collection($page->versions()->with('creator')->latest('version')->paginate(20));
     }
 
     public function createVersion(StorePageVersionRequest $request, Organization $organization, Page $page, CreatePageVersion $action): JsonResponse
@@ -77,6 +78,14 @@ class PageController extends Controller
         $this->authorize('update', $page);
         $version = $action->handle($page, $request->validated()['content'], (int) $request->user()->getKey());
         return (new PageVersionResource($version))->response()->setStatusCode(201);
+    }
+
+    public function restoreVersion(Request $request, Organization $organization, Page $page, PageVersion $version, RestorePageVersion $action): PageVersionResource
+    {
+        abort_unless((string) $page->organization_id === (string) $organization->getKey(), 404);
+        abort_unless((string) $version->page_id === (string) $page->getKey(), 404);
+        $this->authorize('update', $page);
+        return new PageVersionResource($action->handle($page, $version, (int) $request->user()->getKey()));
     }
 
     public function submitReview(Organization $organization, Page $page, PageVersion $version, TransitionPageVersionStatus $action): PageVersionResource
