@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\CMS;
 
+use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\Page;
 use App\Models\PageVersion;
@@ -28,6 +29,7 @@ class PublishingWorkflowTest extends TestCase
 
         $this->assertSame('draft', $version->refresh()->status);
         $this->assertSame('draft', $page->refresh()->status);
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 
     public function test_approved_version_can_be_published_and_replaces_previous_published_version(): void
@@ -47,6 +49,16 @@ class PublishingWorkflowTest extends TestCase
         $this->assertSame('published', $new->refresh()->status);
         $this->assertNotNull($new->published_at);
         $this->assertSame('published', $page->refresh()->status);
+
+        $audit = AuditLog::query()->latest('id')->firstOrFail();
+        $this->assertSame('page.version.published', $audit->action);
+        $this->assertSame($organization->id, $audit->organization_id);
+        $this->assertSame($user->id, $audit->user_id);
+        $this->assertSame((string) $new->id, (string) $audit->auditable_id);
+        $this->assertSame('draft', $audit->before_data['page_status']);
+        $this->assertSame('approved', $audit->before_data['version_status']);
+        $this->assertSame('published', $audit->after_data['page_status']);
+        $this->assertSame('published', $audit->after_data['version_status']);
     }
 
     public function test_public_page_does_not_expose_draft_page(): void
